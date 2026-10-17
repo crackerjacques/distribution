@@ -1,0 +1,92 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2026-present ROCKNIX (https://github.com/ROCKNIX)
+#
+# RG Rotate: take the Unisoc WCN and audio-DSP firmware off the device's own eMMC.
+#
+# Neither blob is shipped. They carry no redistributable licence, and they do
+# not need to be shipped: this board keeps its stock Android on the eMMC by
+# design - the SPL loads the secure world from there, so the SD card is all
+# ROCKNIX ever owns - and the firmware lives in raw GPT partitions that every
+# unit therefore has. The a and b slots hold the same image; either will do.
+#
+# The lengths are the vendor driver's own, not the file sizes from a stock
+# rootfs. marlin_download_from_partition() reads get_firmware_max_size() bytes,
+# and the unsigned path in btwifi_download_firmware() pushes firmware->size
+# verbatim, so the file must not be longer than that window.
+#
+# The root filesystem is read-only, so the blobs go to the user firmware
+# directory, which kernel-overlays-setup links into /usr/lib/firmware on every
+# boot. For this boot they are linked in by hand as well.
+set -u
+PATH=/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+DEST=/storage/.config/firmware
+LIVE=/run/kernel-overlays/firmware
+WCN_LEN=947200   # M3L_FIRMWARE_MAX_SIZE, 0xe7400; also inside M3's 0xf0c00
+DSP_LEN=5242880  # what the stock agdsp image occupies
+
+log() { echo "rotate-extract-firmware: $*"; }
+
+# The symlinks come from udev, which may still be settling this early.
+i=0
+while [ ! -d /dev/disk/by-partlabel ] && [ "$i" -lt 30 ]; do
+	i=$((i + 1))
+	sleep 1
+done
+
+slot() {
+	for p in "/dev/disk/by-partlabel/$1_a" "/dev/disk/by-partlabel/$1_b"; do
+		[ -r "$p" ] && { echo "$p"; return 0; }
+	done
+	return 1
+}
+
+# Refuse anything that is not the image we expect: an empty or re-flashed slot
+# would otherwise be handed to the DSP as firmware.
+valid() {
+	case "$2" in
+		wcnmodem) [ "$(od -An -tx1 -N4 "$1" | tr -d ' ')" = "a00a1a00" ] ;;
+		agdsp) [ "$(dd "if=$1" bs=14 count=1 2>/dev/null)" = "SharkL5_AUDCP_" ] ;;
+	esac
+}
+
+extract() {
+	name=$1 label=$2 len=$3
+	[ -s "$DEST/$name.bin" ] && return 1
+
+	src=$(slot "$label") || { log "no $label partition, cannot provide $name.bin"; return 1; }
+	if ! dd "if=$src" "of=$DEST/$name.bin.new" bs=512 count=$((len / 512)) 2>/dev/null; then
+		log "read failed: $src"
+		rm -f "$DEST/$name.bin.new"
+		return 1
+	fi
+	if ! valid "$DEST/$name.bin.new" "$name"; then
+		log "$src does not look like $name firmware, discarding"
+		rm -f "$DEST/$name.bin.new"
+		return 1
+	fi
+
+	mv "$DEST/$name.bin.new" "$DEST/$name.bin"
+	sync
+	[ -d "$LIVE" ] && ln -sf "$DEST/$name.bin" "$LIVE/$name.bin"
+	log "installed $DEST/$name.bin from $src"
+	return 0
+}
+
+mkdir -p "$DEST"
+
+# The WCN core asks again on its next start_marlin(), so this boot can use it.
+extract wcnmodem wcnmodem "$WCN_LEN"
+
+# The audio DSP loader requests agdsp.bin once, at probe, which has already
+# happened by now. The sound card waits on the DSP, so restart once to bring
+# both up; from then on the blob is in place before the module loads.
+if extract agdsp l_agdsp "$DSP_LEN"; then
+	log "audio DSP firmware installed, rebooting once to start it"
+	echo "rotate-extract-firmware: rebooting to start the audio DSP" >/dev/kmsg
+	systemctl --no-block reboot
+fi
+
+exit 0
