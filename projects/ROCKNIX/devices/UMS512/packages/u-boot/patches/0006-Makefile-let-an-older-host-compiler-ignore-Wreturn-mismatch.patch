@@ -1,0 +1,24 @@
+From: crackerjacques <jack@supremeoverlordjabs.co>
+Subject: [PATCH] Makefile: let an older host compiler ignore -Wreturn-mismatch
+
+-Wreturn-mismatch only exists from GCC 14, and -Wno-error=<unknown> is a hard
+error, so a pre-14 host compiler stops at scripts/basic/fixdep. The plain
+-Wno- form of an unknown warning is silently ignored instead, which keeps the
+host flags working on both sides of GCC 14. The target flags are untouched:
+the cross compiler is GCC 16.
+
+Signed-off-by: crackerjacques <jack@supremeoverlordjabs.co>
+
+diff --git a/Makefile b/Makefile
+index 968a7aa..7f5107a 100644
+--- a/Makefile
++++ b/Makefile
+@@ -267,7 +267,7 @@ HOSTCXXFLAGS = -O2
+ 
+ # GCC 14 rejects by default several things this 2015 tree does throughout.
+ # Keep them as warnings; real bugs get fixed in their own patches.
+-HOSTCFLAGS   += -fpermissive -Wno-error=return-mismatch -Wno-error=int-conversion -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types
++HOSTCFLAGS   += -fpermissive -Wno-return-mismatch -Wno-error=int-conversion -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types
+ 
+ ifeq ($(HOSTOS),cygwin)
+ HOSTCFLAGS	+= -ansi
