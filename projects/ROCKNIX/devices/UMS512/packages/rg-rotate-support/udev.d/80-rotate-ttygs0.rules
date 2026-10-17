@@ -1,0 +1,3 @@
+# Start the debug shell when the gadget serial port appears; see the
+# debug-shell.service drop-in.
+SUBSYSTEM=="tty", KERNEL=="ttyGS0", ACTION=="add", TAG+="systemd", ENV{SYSTEMD_WANTS}+="debug-shell.service"
