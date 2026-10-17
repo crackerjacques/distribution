@@ -52,6 +52,13 @@ case ${DEVICE} in
     PKG_URL="https://www.kernel.org/pub/linux/kernel/v${PKG_VERSION/.*/}.x/${PKG_NAME}-${PKG_VERSION}.tar.xz"
     PKG_PATCH_DIRS+=" 7.0"
     ;;
+  UMS512)
+    # beebono/linux-mainline-sprd forward ported onto v7.2.9; same pin as
+    # Armbian's sprd-ums512 family.
+    PKG_VERSION="d0aba8189b5a480c1c4f934b2a75b0664cf51f8a"
+    PKG_SHA256="4e84317da744a86902d16767ef139a0d56524b100208d2f01cb916dfb7641a97"
+    PKG_URL="https://github.com/crackerjacques/linux-mainline-sprd/archive/${PKG_VERSION}.tar.gz"
+    ;;
   RK3399)
     PKG_VERSION="6.18.54"
     PKG_SHA256="9df30b02dd8102bbd0be52556288ef6889ddbe7f1ddb96fbf847d0becf3eacac"
@@ -429,7 +436,7 @@ makeinstall_target() {
     mkdir -p ${INSTALL}/usr/share/bootloader
     for dtb in arch/${TARGET_KERNEL_ARCH}/boot/dts/**/*.dtb; do
       if [ -f ${dtb} ]; then
-        if [ "${DEVICE}" = "H700" -o "${DEVICE}" = "RK3326" -o "${DEVICE}" = "RK3399" -o "${DEVICE}" = "RK3566" -o "${DEVICE}" = "RK3576" -o "${DEVICE}" = "RK3588" ]; then
+        if [ "${DEVICE}" = "H700" -o "${DEVICE}" = "RK3326" -o "${DEVICE}" = "RK3399" -o "${DEVICE}" = "RK3566" -o "${DEVICE}" = "RK3576" -o "${DEVICE}" = "RK3588" -o "${DEVICE}" = "UMS512" ]; then
           mkdir -p ${INSTALL}/usr/share/bootloader/device_trees
           cp -v ${dtb} ${INSTALL}/usr/share/bootloader/device_trees
         else
