@@ -12,7 +12,7 @@ matches:
         - name: model
           value: Anbernic RG Rotate
 
-maximum_sources: 1
+maximum_sources: 2
 
 # The whole pad is one gpio-keys node; the input device takes the node name.
 source_devices:
@@ -21,6 +21,11 @@ source_devices:
       name: gpio-keys-gamepad
       handler: event*
     capability_map_id: rg_rotate_map
+  # The SC27xx vibrator motor; games' rumble reaches it through the target.
+  - group: gamepad
+    evdev:
+      name: sc27xx:vibrator
+      handler: event*
 
 options:
   auto_manage: true

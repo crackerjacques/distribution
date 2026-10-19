@@ -1,9 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (C) 2026-present ROCKNIX (https://github.com/ROCKNIX)
 
-# Anbernic RG Rotate board support, taken from Armbian's anbernic-rg-rotate:
-# firmware extraction from the eMMC, the speaker/mic routing on the SC2730
-# codec, its UCM profile and the PipeWire constraints the VBC DMA needs.
 PKG_NAME="rg-rotate-support"
 PKG_VERSION=""
 PKG_LICENSE="GPL"
@@ -18,17 +15,19 @@ makeinstall_target() {
     cp -av ${PKG_DIR}/sources/bin/* ${INSTALL}/usr/bin
     chmod 0755 ${INSTALL}/usr/bin/rotate-*
 
-  # WCN register tables. They have no partition of their own on the eMMC, so
-  # unlike wcnmodem.bin and agdsp.bin these are shipped.
   mkdir -p ${INSTALL}/$(get_full_firmware_dir)/sprd
     cp -av ${PKG_DIR}/sources/firmware/sprd/*.ini ${INSTALL}/$(get_full_firmware_dir)/sprd
+
+  for event in shutdown reboot; do
+    mkdir -p ${INSTALL}/usr/share/emulationstation/scripts/${event}
+      cp -av ${PKG_DIR}/sources/emulationstation/rotate-quit-fallback.sh ${INSTALL}/usr/share/emulationstation/scripts/${event}
+      chmod 0755 ${INSTALL}/usr/share/emulationstation/scripts/${event}/rotate-quit-fallback.sh
+  done
 
   mkdir -p ${INSTALL}/usr/share/wireplumber/wireplumber.conf.d
     cp -av ${PKG_DIR}/sources/wireplumber/*.conf ${INSTALL}/usr/share/wireplumber/wireplumber.conf.d
 
-  # alsa-lib tries several names for this card, and which one it settles on has
-  # varied between releases, so every spelling points back at the one profile.
-  # See sprdphonesc2730.conf.
+  # Every card name alsa-lib may look up points at the one profile.
   local ucm=${INSTALL}/usr/share/alsa/ucm2
   mkdir -p ${ucm}/sprdphonesc2730 ${ucm}/sprdphone-sc2730 ${ucm}/sprdphone-sc273 ${ucm}/conf.d/sprdphone-sc273
     cp -av ${PKG_DIR}/sources/ucm2/sprdphonesc2730/*.conf ${ucm}/sprdphonesc2730

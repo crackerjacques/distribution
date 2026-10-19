@@ -20,8 +20,7 @@ echo "Updating device trees..."
 mkdir -p $BOOT_ROOT/device_trees
 cp -f $SYSTEM_ROOT/usr/share/bootloader/device_trees/* $BOOT_ROOT/device_trees
 
-# The SPL finds U-Boot by GPT partition name, so write into that partition on
-# the boot disk only. The eMMC holds stock Android with its own uboot_a/b.
+# Only the boot disk's "uboot" partition; the eMMC keeps stock Android.
 if [ -f "$SYSTEM_ROOT/usr/share/bootloader/uboot_dhtb.img" -a -n "$BOOT_DISK" ]; then
   for UEVENT in /sys/class/block/${BOOT_DISK##*/}p*/uevent; do
     if grep -qx "PARTNAME=uboot" "$UEVENT"; then

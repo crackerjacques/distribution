@@ -1,27 +1,7 @@
 #!/bin/sh
-# Bring up the speaker path on sprdphone-sc2730.
-#
-# Runs from rotate-audio.service, which multi-user.target wants and which
-# 80-rotate-audio.rules also pulls in when the card appears, and can be run by
-# hand to tell a mixer problem from a DSP one. Idempotent, so running it more
-# than once is free. The UCM HiFi verb sets the same controls when PipeWire
-# opens the card; this covers plain ALSA users and anything that opens the card
-# before the session does.
-#
-# Mixer only. The DSP's lost-start problem is dealt with per session by
-# rotate-audio-prime, not here: the start that goes missing is the one PipeWire
-# issues, and opening hw:0,3 directly from this script does not stand in for
-# it.
-#
-# Order matters: agdsp_access_en has to be first. Codec digital register
-# writes are gated on agdsp_can_access() and are silently dropped - reported
-# as success - while the audio DSP is asleep.
-#
-# Not an asound.state: alsactl cannot read back the DSP-side controls, so a
-# saved state would replay them wrong.
+# Speaker and microphone routing on sprdphone-sc2730, for ALSA users and
+# anything that opens the card before PipeWire applies the UCM profile.
 set -u
-# udev gives RUN programs a minimal environment; do not depend on inheriting a
-# usable PATH from whoever called us.
 PATH=/usr/bin:/usr/sbin:/bin:/sbin
 export PATH
 C=${1:-0}
@@ -32,7 +12,7 @@ set_ctl() {
 		echo "rotate-audio-setup: could not set '$name'" >&2
 }
 
-# AGDSP has to be reachable before any of the VBC writes land.
+# First: codec writes are silently dropped while the audio DSP is asleep.
 set_ctl 'agdsp_access_en'                  on
 set_ctl 'agdsp_access_a2dp_en'             on
 
@@ -41,8 +21,7 @@ set_ctl 'DSP VBC Profile Select'           961216512
 set_ctl 'VBC DAC0 AUD MDG Set'             1,1024
 set_ctl 'VBC_DAC0_DP_EN'                   enable
 
-# hw:0,3 is FE_ST_FAST; without this the frontend cannot even be opened
-# (snd_pcm_open returns -EIO).
+# Without this hw:0,3 (FE_ST_FAST) fails to open with -EIO.
 set_ctl 'S_FAST_P_CODEC SWITCH'            on
 set_ctl 'VBC_MIXER0_DAC0'                  HALF_ADD
 set_ctl 'VBC DAC0 DG Set'                  25,25
@@ -62,10 +41,7 @@ set_ctl 'DAC Gain DAC Playback Volume'     3
 set_ctl 'HPL Gain HPL Playback Volume'     4
 set_ctl 'HPR Gain HPR Playback Volume'     4
 
-# Microphone: main mic (MICBIAS1) -> ADCL mixer -> ADC0 -> codec ADC IIS ->
-# ag_iis1 -> VBC ADC0 -> AUDRCD01 -> hw:0,2 (FE_ST_CAPTURE_DSP). Mono, on the
-# left channel. ag_iis1_ext_sel is the ADC-side twin of the AG_IIS0 route the
-# codec driver enables for playback at probe; nothing enables it for capture.
+# Main mic -> ADC0 -> VBC -> hw:0,2, mono on the left channel.
 set_ctl 'Mic Function'                     on
 set_ctl 'MICBIAS1 Power'                   on
 set_ctl 'ADCL Mixer MainMICADCL Switch'    on

@@ -53,8 +53,7 @@ case ${DEVICE} in
     PKG_PATCH_DIRS+=" 7.0"
     ;;
   UMS512)
-    # beebono/linux-mainline-sprd forward ported onto v7.2.9; same pin as
-    # Armbian's sprd-ums512 family.
+    # linux-mainline-sprd on v7.2.9, same pin as Armbian's sprd-ums512.
     PKG_VERSION="d0aba8189b5a480c1c4f934b2a75b0664cf51f8a"
     PKG_SHA256="4e84317da744a86902d16767ef139a0d56524b100208d2f01cb916dfb7641a97"
     PKG_URL="https://github.com/crackerjacques/linux-mainline-sprd/archive/${PKG_VERSION}.tar.gz"

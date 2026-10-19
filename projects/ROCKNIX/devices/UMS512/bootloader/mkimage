@@ -1,23 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (C) 2026-present ROCKNIX (https://github.com/ROCKNIX)
 
-# Unisoc T618 boot chain:
-#   BootROM -> SPL (eMMC boot area, flashed once) -> U-Boot (this SD card)
-#   -> extlinux.conf on mmc 1:1 or 1:2 -> KERNEL
-#
-# The SPL does not read a fixed offset: it looks the next stage up by GPT
-# partition *name* "uboot" and reads it raw. The generic layout leaves the
-# space in front of the system partition unused, so the slot goes there; it
-# becomes partition 3, which is fine since only the name is matched.
+# The Unisoc SPL loads U-Boot from the GPT partition named "uboot".
 
-# U-Boot loads KERNEL to kernel_addr_r (0x80080000) and has the extlinux.conf
-# buffer at pxefile_addr_r (0x84d00000) and the FDT at 0x84e00000. A kernel
-# whose in-memory size (header image_size, BSS included) reaches past the
-# first of those clobbers it and the board hangs before any output.
+# A larger kernel overwrites extlinux.conf (pxefile_addr_r) at load time.
 UMS512_KERNEL_BUDGET=$((0x84d00000 - 0x80080000))
 
-# The SPL refuses a U-Boot whose DHTB size plus the 1 KiB secure-boot cert
-# exceeds CONFIG_UBOOT_MAX_SIZE (1 MiB), however large the partition is.
+# The SPL's CONFIG_UBOOT_MAX_SIZE, less the 1 KiB secure-boot cert.
 UMS512_UBOOT_BUDGET=$((0x100000 - 1024))
 
 mkimage_sprd_uboot() {
@@ -32,14 +21,14 @@ mkimage_sprd_uboot() {
     show_error
   fi
 
-  # DHTB: header 512 bytes, payload size the little-endian u32 at offset 0x30.
+  # DHTB payload size
   size=$(od -An -t u4 -j 48 -N 4 "${uboot}" | tr -d ' ')
   if [ "${size}" -gt "${UMS512_UBOOT_BUDGET}" ]; then
     echo "uboot_dhtb.img payload is ${size} bytes, the SPL loads at most ${UMS512_UBOOT_BUDGET}" >"${SAVE_ERROR}"
     show_error
   fi
 
-  # arm64 Image header: image_size is the little-endian u64 at offset 16.
+  # arm64 Image header image_size
   size=$(od -An -t u8 -j 16 -N 8 "${kernel}" | tr -d ' ')
   if [ "${size}" -gt "${UMS512_KERNEL_BUDGET}" ]; then
     echo "KERNEL needs ${size} bytes in memory, U-Boot leaves ${UMS512_KERNEL_BUDGET}" >"${SAVE_ERROR}"

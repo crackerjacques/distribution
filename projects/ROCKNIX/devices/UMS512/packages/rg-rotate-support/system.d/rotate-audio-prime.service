@@ -1,8 +1,5 @@
 [Unit]
 Description=RG Rotate: spend the DSP's lost playback start
-# Needs a running PipeWire graph to issue the start through; see the script for
-# why doing this outside PipeWire does not help. ROCKNIX runs PipeWire as a
-# system service for root, so this is a system unit too.
 After=pipewire.service wireplumber.service
 Wants=pipewire.service wireplumber.service
 
@@ -10,7 +7,6 @@ Wants=pipewire.service wireplumber.service
 Type=oneshot
 Environment=XDG_RUNTIME_DIR=/var/run/0-runtime-dir
 ExecStart=/usr/bin/rotate-audio-prime
-# The script bounds itself; do not let a wedge anywhere in it hold up boot.
 TimeoutStartSec=20
 
 [Install]

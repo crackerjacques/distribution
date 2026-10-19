@@ -68,7 +68,7 @@
     FIRMWARE=""
 
   # Additional packages to install
-    ADDITIONAL_PACKAGES="inputplumber rg-rotate-support"
+    ADDITIONAL_PACKAGES="inputplumber rg-rotate-support binutils"
 
   # Debug tty path
     DEBUG_TTY="/dev/ttyGS0"
