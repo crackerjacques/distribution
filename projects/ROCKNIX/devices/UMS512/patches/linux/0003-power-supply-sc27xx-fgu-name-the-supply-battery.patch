@@ -1,0 +1,22 @@
+From: crackerjacques <jack@supremeoverlordjabs.co>
+Subject: [PATCH] power: supply: sc27xx-fgu: name the supply "battery"
+
+ROCKNIX finds the battery by name: battery_percent() in 001-functions reads
+POWER_SUPPLY_CAPACITY from /sys/class/power_supply/[Bb][Aa][Tt]*/uevent. The
+SC27xx fuel gauge registers as "sc27xx-fgu", so nothing matches, the battery
+level is empty, powerstate fails its arithmetic every two seconds and the
+low-battery warning never fires. Register under "battery", as most fuel
+gauges do. Nothing looks the supply up by its old name: the chargers and the
+board's DT reach it through monitored-battery and phandles.
+
+--- a/drivers/power/supply/sc27xx_fuel_gauge.c
++++ b/drivers/power/supply/sc27xx_fuel_gauge.c
+@@ -891,7 +891,7 @@
+ };
+ 
+ static const struct power_supply_desc sc27xx_fgu_desc = {
+-	.name			= "sc27xx-fgu",
++	.name			= "battery",
+ 	.type			= POWER_SUPPLY_TYPE_BATTERY,
+ 	.properties		= sc27xx_fgu_props,
+ 	.num_properties		= ARRAY_SIZE(sc27xx_fgu_props),

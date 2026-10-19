@@ -1,0 +1,1 @@
+SUBSYSTEM=="tty", KERNEL=="ttyGS0", ACTION=="add", TAG+="systemd", ENV{SYSTEMD_WANTS}+="debug-shell.service"

@@ -1,0 +1,19 @@
+#!/bin/sh
+# The audio DSP drops the first playback start PipeWire sends after boot,
+# leaving the board silent. Spend it on silence.
+set -u
+PATH=/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+command -v pw-cat >/dev/null 2>&1 || exit 0
+
+# Retry until a playback completes; -k kills one stuck on the lost start.
+deadline=$(($(date +%s) + 15))
+while [ "$(date +%s)" -lt "$deadline" ]; do
+	dd if=/dev/zero bs=4096 count=48 2>/dev/null |
+		timeout -k 2 5 pw-cat --playback --format=s16 --rate=48000 \
+			--channels=2 --raw - >/dev/null 2>&1 && exit 0
+	sleep 0.5
+done
+
+exit 0

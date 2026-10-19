@@ -1,0 +1,71 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2026-present ROCKNIX (https://github.com/ROCKNIX)
+#
+# Copy the WCN and audio DSP firmware from the stock Android partitions on the
+# eMMC into the user firmware directory. They are not redistributable.
+set -u
+PATH=/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+DEST=/storage/.config/firmware
+LIVE=/run/kernel-overlays/firmware
+WCN_LEN=947200   # M3L_FIRMWARE_MAX_SIZE
+DSP_LEN=5242880
+
+log() { echo "rotate-extract-firmware: $*"; }
+
+i=0
+while [ ! -d /dev/disk/by-partlabel ] && [ "$i" -lt 30 ]; do
+	i=$((i + 1))
+	sleep 1
+done
+
+slot() {
+	for p in "/dev/disk/by-partlabel/$1_a" "/dev/disk/by-partlabel/$1_b"; do
+		[ -r "$p" ] && { echo "$p"; return 0; }
+	done
+	return 1
+}
+
+valid() {
+	case "$2" in
+		wcnmodem) [ "$(od -An -tx1 -N4 "$1" | tr -d ' ')" = "a00a1a00" ] ;;
+		agdsp) [ "$(dd "if=$1" bs=14 count=1 2>/dev/null)" = "SharkL5_AUDCP_" ] ;;
+	esac
+}
+
+extract() {
+	name=$1 label=$2 len=$3
+	[ -s "$DEST/$name.bin" ] && return 1
+
+	src=$(slot "$label") || { log "no $label partition, cannot provide $name.bin"; return 1; }
+	if ! dd "if=$src" "of=$DEST/$name.bin.new" bs=512 count=$((len / 512)) 2>/dev/null; then
+		log "read failed: $src"
+		rm -f "$DEST/$name.bin.new"
+		return 1
+	fi
+	if ! valid "$DEST/$name.bin.new" "$name"; then
+		log "$src does not look like $name firmware, discarding"
+		rm -f "$DEST/$name.bin.new"
+		return 1
+	fi
+
+	mv "$DEST/$name.bin.new" "$DEST/$name.bin"
+	sync
+	[ -d "$LIVE" ] && ln -sf "$DEST/$name.bin" "$LIVE/$name.bin"
+	log "installed $DEST/$name.bin from $src"
+	return 0
+}
+
+mkdir -p "$DEST"
+
+extract wcnmodem wcnmodem "$WCN_LEN"
+
+# The DSP loader only requests agdsp.bin at probe, which has failed by now.
+if extract agdsp l_agdsp "$DSP_LEN"; then
+	log "audio DSP firmware installed, probing the DSP again"
+	echo audcp-boot >/sys/bus/platform/drivers_probe
+fi
+
+exit 0

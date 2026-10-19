@@ -1,0 +1,2 @@
+# The card can register after rotate-audio.service has been skipped.
+SUBSYSTEM=="sound", ACTION=="add", KERNEL=="controlC0", RUN+="/usr/bin/rotate-audio-setup"

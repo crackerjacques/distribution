@@ -1,0 +1,13 @@
+[Unit]
+Description=RG Rotate: take the sprd firmware off the eMMC
+Before=network-pre.target bluetooth.target
+Wants=network-pre.target
+RequiresMountsFor=/storage
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/rotate-extract-firmware
+
+[Install]
+WantedBy=multi-user.target

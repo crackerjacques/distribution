@@ -217,6 +217,12 @@ sed -i '/^use_shader_jit\\default=/c\use_shader_jit\\default=false' ${CONF_FILE}
 # Video Backend - default to Vulkan
 sed -i '/^graphics_api\\default=/c\graphics_api\\default=false' ${CONF_FILE}
 
+# UMS512: PanVK is Vulkan 1.0 only, and panfrost reports GLES 3.1 but runs Azahar.
+if [ "${HW_DEVICE}" = "UMS512" ]; then
+  [ -z "${RENDERER}" ] && RENDERER=1
+  export MESA_GLES_VERSION_OVERRIDE=3.2
+fi
+
 case "${RENDERER}" in
   1) sed -i '/^graphics_api=/c\graphics_api=1' ${CONF_FILE};;
   *) sed -i '/^graphics_api=/c\graphics_api=2' ${CONF_FILE};;

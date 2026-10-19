@@ -1,0 +1,13 @@
+[Unit]
+Description=RG Rotate: spend the DSP's lost playback start
+After=pipewire.service wireplumber.service
+Wants=pipewire.service wireplumber.service
+
+[Service]
+Type=oneshot
+Environment=XDG_RUNTIME_DIR=/var/run/0-runtime-dir
+ExecStart=/usr/bin/rotate-audio-prime
+TimeoutStartSec=20
+
+[Install]
+WantedBy=multi-user.target

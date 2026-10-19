@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2026-present ROCKNIX (https://github.com/ROCKNIX)
+
+# The Unisoc SPL loads U-Boot from the GPT partition named "uboot".
+
+# A larger kernel overwrites extlinux.conf (pxefile_addr_r) at load time.
+UMS512_KERNEL_BUDGET=$((0x84d00000 - 0x80080000))
+
+# The SPL's CONFIG_UBOOT_MAX_SIZE, less the 1 KiB secure-boot cert.
+UMS512_UBOOT_BUDGET=$((0x100000 - 1024))
+
+mkimage_sprd_uboot() {
+  local uboot="${RELEASE_DIR}/3rdparty/bootloader/uboot_dhtb.img"
+  local kernel="${TARGET_IMG}/${BUILD_NAME}.kernel"
+  local slot_start=2048
+  local slot_end=$((SYSTEM_PART_START - 1))
+  local size
+
+  if [ ! -f "${uboot}" ]; then
+    echo "uboot_dhtb.img not found in ${RELEASE_DIR}/3rdparty/bootloader" >"${SAVE_ERROR}"
+    show_error
+  fi
+
+  # DHTB payload size
+  size=$(od -An -t u4 -j 48 -N 4 "${uboot}" | tr -d ' ')
+  if [ "${size}" -gt "${UMS512_UBOOT_BUDGET}" ]; then
+    echo "uboot_dhtb.img payload is ${size} bytes, the SPL loads at most ${UMS512_UBOOT_BUDGET}" >"${SAVE_ERROR}"
+    show_error
+  fi
+
+  # arm64 Image header image_size
+  size=$(od -An -t u8 -j 16 -N 8 "${kernel}" | tr -d ' ')
+  if [ "${size}" -gt "${UMS512_KERNEL_BUDGET}" ]; then
+    echo "KERNEL needs ${size} bytes in memory, U-Boot leaves ${UMS512_KERNEL_BUDGET}" >"${SAVE_ERROR}"
+    show_error
+  fi
+  echo "image: KERNEL image_size ${size} of ${UMS512_KERNEL_BUDGET} bytes available"
+
+  echo "image: creating GPT partition 'uboot' for the Unisoc SPL..."
+  parted -s "${DISK}" -a min unit s mkpart uboot ${slot_start} ${slot_end} >"${SAVE_ERROR}" 2>&1 || show_error
+
+  echo "image: writing uboot_dhtb.img to $(basename "${DISK}")..."
+  dd if="${uboot}" of="${DISK}" bs=512 seek=${slot_start} conv=fsync,notrunc >"${SAVE_ERROR}" 2>&1 || show_error
+}
+
+. "${PROJECT_DIR}/${PROJECT}/bootloader/mkimage"

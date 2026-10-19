@@ -1,0 +1,14 @@
+[Unit]
+Description=RG Rotate speaker routing and DSP prime
+After=alsa-restore.service sound.target
+Wants=sound.target
+# A card that registers later is handled by 80-rotate-audio.rules.
+ConditionPathExists=/dev/snd/controlC0
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/rotate-audio-setup
+
+[Install]
+WantedBy=multi-user.target
