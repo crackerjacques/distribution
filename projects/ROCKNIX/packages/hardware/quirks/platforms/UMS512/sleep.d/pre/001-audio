@@ -1,0 +1,14 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2026-present ROCKNIX (https://github.com/ROCKNIX)
+
+# The codec keeps replaying its last buffer while suspended, which buzzes.
+# Mute the sink first so that buffer holds silence.
+
+. /etc/profile
+
+if ! wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -q MUTED; then
+  wpctl set-mute @DEFAULT_AUDIO_SINK@ 1
+  touch /run/.sleep_muted_audio
+  sleep 0.1
+fi

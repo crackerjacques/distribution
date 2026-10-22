@@ -47,9 +47,9 @@ case ${DEVICE} in
     PKG_PATCH_DIRS+=" 7.0"
     ;;
   UMS512)
-    # linux-mainline-sprd on v7.2.9, same pin as Armbian's sprd-ums512.
-    PKG_VERSION="d0aba8189b5a480c1c4f934b2a75b0664cf51f8a"
-    PKG_SHA256="4e84317da744a86902d16767ef139a0d56524b100208d2f01cb916dfb7641a97"
+    # linux-mainline-sprd on v7.3.
+    PKG_VERSION="736addef621117635b6bd1e151d025b3514723f8"
+    PKG_SHA256="dd5e50896ecbf03a5d6a47adbf9ea19d416d20e55699c4f4d7312ba2721531be"
     PKG_URL="https://github.com/crackerjacques/linux-mainline-sprd/archive/${PKG_VERSION}.tar.gz"
     ;;
   RK3399)

@@ -36,7 +36,7 @@
 
   # Mali GPU family
     MALI_FAMILY="bifrost-g52"
-    GRAPHIC_DRIVERS="panfrost"
+    GRAPHIC_DRIVERS="mali panfrost"
 
   # For maximum cross compatbility
     PREFER_GLES="yes"
@@ -60,7 +60,7 @@
   # for a list of additional drivers see packages/linux-drivers
   # Space separated list is supported,
   # e.g. ADDITIONAL_DRIVERS="DRIVER1 DRIVER2"
-    ADDITIONAL_DRIVERS=""
+    ADDITIONAL_DRIVERS="mali-bifrost"
 
   # Additional Firmware to use ( )
   # Space separated list is supported,
@@ -68,7 +68,8 @@
     FIRMWARE=""
 
   # Additional packages to install
-    ADDITIONAL_PACKAGES="inputplumber rg-rotate-support binutils"
+    ADDITIONAL_PACKAGES="inputplumber rg-rotate-support binutils libmali"
+    ADDITIONAL_PACKAGES_32BIT="libmali"
 
   # Debug tty path
     DEBUG_TTY="/dev/ttyGS0"

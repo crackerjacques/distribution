@@ -1,0 +1,12 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2026-present ROCKNIX (https://github.com/ROCKNIX)
+
+# Undo the mute from sleep.d/pre/001-audio.
+
+. /etc/profile
+
+if [ -e /run/.sleep_muted_audio ]; then
+  wpctl set-mute @DEFAULT_AUDIO_SINK@ 0
+  rm -f /run/.sleep_muted_audio
+fi
